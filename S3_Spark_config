@@ -1,0 +1,69 @@
+AWS S3 integration with spark for Reading and Writing S3 data
+
+There are 2 file system clients available for S3
+1. S3N
+2. S3A
+
+Below Configuration is based on S3A client
+
+Spark 2.1.0
+Scala version 2.11.8
+hadoop client 2.8.0
+hadoop-aws 2.8.0
+
+Jackson Dependencies Version Conflict
+Consider only jackson cmng from spark core 
+
+spark.sparkContext.hadoopConfiguration.set("fs.s3a.impl","END_POINT_URL") 
+      spark.sparkContext.hadoopConfiguration.set("fs.s3a.access.key", configMap("fc.aws.s3.access.key"))
+      spark.sparkContext.hadoopConfiguration.set("fs.s3a.secret.key", configMap("fc.aws.s3.secret.key"))
+      spark.sparkContext.hadoopConfiguration.set("fs.s3a.endpoint", configMap("fs.s3a.endpoint"))
+      spark.sparkContext.hadoopConfiguration.set("fs.s3a.path.style.access", "true")
+	  
+spark.sparkContext.hadoopConfiguration.set("fs.s3a.impl","org.apache.hadoop.fs.s3a.S3AFileSystem") 
+		
+		<dependency>
+			<groupId>org.apache.hadoop</groupId>
+			<artifactId>hadoop-aws</artifactId>
+			<version>2.8.0</version>
+			<exclusions>
+				<exclusion>
+					<groupId>com.fasterxml.jackson.core</groupId>
+					<artifactId>jackson-annotations</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>com.fasterxml.jackson.core</groupId>
+					<artifactId>jackson-core</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		
+		<dependency>
+			<groupId>com.amazonaws</groupId>
+			<artifactId>aws-java-sdk</artifactId>
+			<version>1.11.5</version>
+		</dependency>
+		
+		<dependency>
+			<groupId>org.apache.hadoop</groupId>
+			<artifactId>hadoop-client</artifactId>
+			<version>2.8.0</version>
+			<exclusions>
+				<exclusion>
+					<artifactId>aws-java-sdk-s3</artifactId>
+					<groupId>com.amazonaws</groupId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		
+		<dependency>
+			<groupId>org.apache.spark</groupId>
+			<artifactId>spark-sql_${scala.tools.version}</artifactId>
+			<version>${spark.version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.apache.hadoop</groupId>
+					<artifactId>hadoop-client</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
