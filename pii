@@ -1,0 +1,63 @@
+import org.apache.spark.sql.SQLContext
+import org.apache.spark.SparkContext
+import org.apache.spark.sql.SparkSession
+
+import sqlContext.implicits._
+import spark.implicits._
+
+def scorePIIColumns(inputDF:DataFrame, spark:SparkSession, sc:SparkContext):DataFrame={
+
+case class PII_Possible_DF(table_name:String, column_name:String, IP_Percentage:Long, Time_Percentage:Long, Phone_Percentage:Long, Link_Percentage:Long, Date_Percentage:Long, Email_Percentage:Long)
+
+var spark = SparkSession.builder.getOrCreate()
+var sqlContext = new org.apache.spark.sql.SQLContext(sc)
+import sqlContext.implicits._
+import spark.implicits._
+
+var InputColumns=inputDF.columns
+var PIICheckIterator=1
+
+var TimeNotNull:Long=0
+var TimePercentage:Long=0
+var PhoneNotNull:Long=0
+var PhonePercentage:Long=0
+var LinkNotNull:Long=0
+var LinkPercentage:Long=0
+var DateNotNull:Long=0
+var DatePercentage:Long=0
+var IPNotNull:Long=0
+var IPPercentage:Long=0
+var EmailNotNull:Long=0
+var EmailPercentage:Long=0
+var outputDF = Seq(PII_Possible_DF("", "", 0, 0, 0, 0, 0, 0)).toDF()
+var tempTable = Seq(PII_Possible_DF("", "", 0, 0, 0, 0, 0, 0)).toDF()
+var intrimTable = Seq(PII_Possible_DF("", "", 0, 0, 0, 0, 0, 0)).toDF()
+var TotalCount=inputDF.count
+var runBoolean = true
+
+while(PIICheckIterator <= inputDF.columns.length) {
+TimeNotNull=inputDF.select(InputColumns(PIICheckIterator -1)).rdd.map(X => CommonRegex.time.findAllIn(X.toString).toList.mkString).toDF.filter(trim($"value")!=="").count
+TimePercentage=TimeNotNull/TotalCount
+
+PhoneNotNull=inputDF.select(InputColumns(PIICheckIterator -1)).rdd.map(X => CommonRegex.phone.findFirstIn(X.toString).toList.mkString).toDF.filter(trim($"value")!=="").count
+PhonePercentage=PhoneNotNull/TotalCount
+
+LinkNotNull=inputDF.select(InputColumns(PIICheckIterator -1)).rdd.map(X => CommonRegex.link.findFirstIn(X.toString).toList.mkString).toDF.filter(trim($"value")!=="").count
+LinkPercentage=LinkNotNull/TotalCount
+
+DateNotNull=inputDF.select(InputColumns(PIICheckIterator -1)).rdd.map(X => CommonRegex.date.findAllIn(X.toString).toList.mkString).toDF.filter(trim($"value")!=="").count
+DatePercentage=DateNotNull/TotalCount
+
+IPNotNull=inputDF.select(InputColumns(PIICheckIterator -1)).rdd.map(X => CommonRegex.ip.findFirstIn(X.toString).toList.mkString).toDF.filter(trim($"value")!=="").count
+IPPercentage=IPNotNull/TotalCount
+
+EmailNotNull=inputDF.select(InputColumns(PIICheckIterator -1)).rdd.map(X => CommonRegex.email.findFirstIn(X.toString).toList.mkString).toDF.filter(trim($"value")!=="").count
+EmailPercentage=EmailNotNull/TotalCount
+
+tempTable=Seq(PII_Possible_DF("test_table", InputColumns(PIICheckIterator -1), IPPercentage, TimePercentage, PhonePercentage, LinkPercentage, DatePercentage, EmailPercentage)).toDF()
+intrimTable=outputDF.union(tempTable)
+outputDF=intrimTable
+PIICheckIterator+=1
+}
+  outputDF
+}
