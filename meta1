@@ -1,0 +1,25 @@
+val columnDataType = inputDF.schema.fields.map(x=>x.dataType)
+val columnName = inputDF.columns
+
+var iteration = 1
+var selectedColumn = inputDF.selectExpr("cast("+ columnName(iteration-1) +" as string) as testColumn")
+var lengthDF = selectedColumn.selectExpr("max(length(testColumn)) as Maximum_Length","min(length(testColumn)) as Minimum_Length","avg(length(testColumn)) as Average_Length","cast(min(testColumn) as string) as Minimum_Value","cast(max(testColumn) as string) as Maximum_Value")
+var distinctValues = selectedColumn.distinct.count
+var totalNumber = selectedColumn.count
+var totalMissing = selectedColumn.filter("testColumn is null").count
+var percentMissing = totalMissing/totalNumber 
+var phase1DF = lengthDF.withColumn("Number_Of_Unique_Values",lit(distinctValues)).withColumn("Source_System",lit("Test_Source")).withColumn("Table_Name",lit("Test_Table")).withColumn("Column_Name",lit(columnName(iteration-1))).withColumn("Data_Type",lit(columnDataType(iteration-1).toString)).withColumn("Percent_Missing",lit(percentMissing)).withColumn("Number_Of_Rows",lit(totalNumber))
+var intrimDF = phase1DF
+var outputDF = phase1DF
+iteration = 2
+while(iteration <= columnName.length) {
+selectedColumn = inputDF.selectExpr("cast("+ columnName(iteration-1) +" as string) as testColumn")
+lengthDF = selectedColumn.selectExpr("max(length(testColumn)) as Maximum_Length","min(length(testColumn)) as Minimum_Length","avg(length(testColumn)) as Average_Length","cast(min(testColumn) as string) as Minimum_Value","cast(max(testColumn) as string) as Maximum_Value")
+distinctValues = selectedColumn.distinct.count
+phase1DF = lengthDF.withColumn("Number_Of_Unique_Values",lit(distinctValues)).withColumn("Source_System",lit("Test_Source")).withColumn("Table_Name",lit("Test_Table")).withColumn("Column_Name",lit(columnName(iteration-1))).withColumn("Data_Type",lit(columnDataType(iteration-1).toString)).withColumn("Percent_Missing",lit(percentMissing)).withColumn("Number_Of_Rows",lit(totalNumber))
+intrimDF = outputDF.union(phase1DF)
+outputDF = intrimDF
+iteration = iteration + 1
+}
+
+outputDF.select($"Source_System",$"Table_Name",$"Column_Name",$"Data_Type",$"Number_Of_Rows",$"Number_Of_Unique_Values",$"Percent_Missing",$"Minimum_Value",$"Maximum_Value",$"Minimum_Length",$"Average_Length",$"Maximum_Length").show
